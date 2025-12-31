@@ -1,0 +1,66 @@
+services:
+  # =====================================================
+  # PostgreSQL Database Server Service
+  # =====================================================
+  postgres-server:
+    image: docker.io/library/postgres:17-alpine
+    container_name: ${POSTGRESQL_SERVER_CONTAINER}
+    environment:
+      POSTGRES_USER: ${POSTGRESQL_SUPERUSER_NAME}
+      POSTGRES_PASSWORD: ${POSTGRESQL_SUPERUSER_PASSWORD}
+      POSTGRES_DB: ${POSTGRESQL_SYSTEM_DB_NAME}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_DB_NAME: ${POSTGRESQL_DB_NAME}
+    ports:
+      - "${POSTGRESQL_EXTERNAL_PORT}:${POSTGRESQL_INTERNAL_PORT}"
+    volumes:
+      - ../app/initialization:/docker-entrypoint-initdb.d
+      # Mounting named volume for persistent PostgreSQL data storage
+      # Volume postgres-data will be created automatically on first run
+      # PostgreSQL is ACID-compliant: each committed transaction is immediately written to disk
+      # This ensures data durability - if you receive confirmation of a successful operation,
+      # the data is already safely stored on disk, even if the container crashes immediately after
+      # All database data will be saved in this volume
+      - ${POSTGRESQL_DATA_PATH}:/var/lib/postgresql/data
+    networks:
+      - postgres-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =====================================================
+  # PostgreSQL Client Service
+  # Interactive database client for development and administration
+  # =====================================================
+  postgres-client:
+    image: docker.io/library/postgres:17-alpine
+    container_name: ${POSTGRESQL_CLIENT_CONTAINER}
+    environment:
+      PGHOST: postgres-server
+      PGPORT: ${POSTGRESQL_INTERNAL_PORT}
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+    networks:
+      - postgres-network
+    command: tail -f /dev/null
+
+# =====================================================
+# Network Configuration
+# =====================================================
+networks:
+  postgres-network:
+    driver: bridge
+
+# =====================================================
+# Volume Configuration
+# =====================================================
+volumes:
+  postgres-data:
+    # Using local driver to store data on the host machine
+    driver: local
+    # Data will persist even after container removal
+    # On docker-compose restart, data will be restored automatically

@@ -1,0 +1,48 @@
+services:
+  # =====================================================
+  # PostgreSQL Database Server Service
+  # =====================================================
+  postgres-server:
+    # Using PostgreSQL 17 with Alpine Linux for minimal footprint
+    image: docker.io/library/postgres:17-alpine
+    
+    # Container naming for easy identification and management
+    container_name: ${POSTGRESQL_SERVER_CONTAINER}
+    
+    # PostgreSQL Server Environment Configuration:
+    # ====================================================
+    #   Required:
+    #   - POSTGRES_USER: Superuser account with full server privileges
+    #   - POSTGRES_PASSWORD: Authentication credential for server access
+    # ====================================================
+    #   Optional:
+    #   - POSTGRES_DB: Initial system database creation (auto-created on first startup)
+    #                  If not specified, defaults to POSTGRES_USER value
+    # ====================================================
+    #   Custom variables for initialization scripts (Security Best Practice):
+    #   - POSTGRESQL_USER_NAME: Regular application user to be created via init scripts
+    #                           This user will have full privileges ONLY on the target database,
+    #                           NOT on the entire PostgreSQL server (unlike POSTGRES_USER)
+    #   - POSTGRESQL_USER_PASSWORD: Password for the application user
+    #   - POSTGRESQL_DB_NAME: Target database name for application user privileges
+    # ====================================================
+    environment:
+      POSTGRES_USER: ${POSTGRESQL_SUPERUSER_NAME}
+      POSTGRES_PASSWORD: ${POSTGRESQL_SUPERUSER_PASSWORD}
+      POSTGRES_DB: ${POSTGRESQL_SYSTEM_DB_NAME}
+
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_DB_NAME: ${POSTGRESQL_DB_NAME}
+    
+    # Port mapping configuration
+    # Maps external host port to internal container port (default PostgreSQL port 5432)
+    ports:
+      - "${POSTGRESQL_EXTERNAL_PORT}:${POSTGRESQL_INTERNAL_PORT}"
+
+    # Mount initialization scripts directory
+    # Scripts in this folder will be executed automatically on first container startup
+    # Supports .sql, .sql.gz, and .sh files for database setup and user creation
+    # Postgres executes ALL scripts in alphabetical order during first container startup
+    volumes:
+      - ../app/initialization:/docker-entrypoint-initdb.d

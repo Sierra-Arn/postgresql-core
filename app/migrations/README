@@ -1,0 +1,20 @@
+# **Generic single-database configuration**
+
+- This is a generic single-database configuration for Alembic migrations.
+- No modifications have been made to `alembic.ini` or `script.py.mako` files. 
+- All customizations for this project are implemented in `env.py`.
+
+## **Important Note**
+
+While SQLAlchemy can automatically create an `ENUM` type (e.g., `device_type`) when defining a column, Alembic’s autogenerate feature does not detect `ENUM` types independently and does not generate proper `downgrade()` logic for them.
+
+As a result, if you rely on auto-generated migrations:
+- The `upgrade()` function will succeed, creating both the type and the table.
+- However, the `downgrade()` function will only drop the table, leaving the `ENUM` type in the database.
+- This causes subsequent `upgrade()` calls to fail with a "duplicate type" error, since the type already exists.
+
+To avoid this issue, explicitly manage `ENUM` types in the `downgrade()` function using:
+
+```python
+op.execute("DROP TYPE ...")
+```

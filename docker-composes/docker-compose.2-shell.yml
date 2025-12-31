@@ -1,0 +1,82 @@
+services:
+  # =====================================================
+  # PostgreSQL Database Server Service
+  # =====================================================
+  postgres-server:
+    image: docker.io/library/postgres:17-alpine
+    container_name: ${POSTGRESQL_SERVER_CONTAINER}
+    environment:
+      POSTGRES_USER: ${POSTGRESQL_SUPERUSER_NAME}
+      POSTGRES_PASSWORD: ${POSTGRESQL_SUPERUSER_PASSWORD}
+      POSTGRES_DB: ${POSTGRESQL_SYSTEM_DB_NAME}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_DB_NAME: ${POSTGRESQL_DB_NAME}
+    ports:
+      - "${POSTGRESQL_EXTERNAL_PORT}:${POSTGRESQL_INTERNAL_PORT}"
+    volumes:
+      - ../app/initialization:/docker-entrypoint-initdb.d
+    
+    # Network configuration for service communication
+    # Connects to custom bridge network for isolated communication between services
+    networks:
+      - postgres-network
+      
+    # Health check configuration to monitor database availability
+    # Ensures the database is ready to accept connections before dependent services start
+    healthcheck:
+      # Use pg_isready utility to test database connectivity and server responsiveness
+      # Uses root credentials for health check verification
+      test: ["CMD", "pg_isready", "-U $${POSTGRES_USER}", "-d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =====================================================
+  # PostgreSQL Client Service
+  # Interactive database client for development and administration
+  # =====================================================
+  postgres-client:
+    # Using same PostgreSQL image to ensure compatibility with server
+    image: docker.io/library/postgres:17-alpine
+    # Container naming for easy identification and management
+    container_name: ${POSTGRESQL_CLIENT_CONTAINER}
+      
+    # PostgreSQL Client Environment Configuration
+    # ====================================================
+    #   Automatic Connection Configuration:
+    #   - PGHOST: Database server hostname
+    #   - PGPORT: Internal port for database connections
+    #
+    # NOTE: In Docker Compose, containers on the same custom network (postgres-network)
+    # communicate using service names as hostnames.
+    # Hence, PGHOST is hardcoded to 'postgres-server' (the service name) for correct
+    # internal DNS resolution within the Docker network.
+    # ====================================================
+    environment:
+      PGHOST: postgres-server
+      PGPORT: ${POSTGRESQL_INTERNAL_PORT}
+      
+    # Service dependency configuration
+    # Ensures postgres-server is healthy before starting client
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+      
+    # Network configuration - same network as server for communication
+    networks:
+      - postgres-network
+      
+    # Keeps container running indefinitely to allow interactive shell access
+    command: tail -f /dev/null
+
+# =====================================================
+# Network Configuration
+# =====================================================
+networks:
+  # Custom bridge network for PostgreSQL services isolation
+  # Provides internal DNS resolution and network segmentation
+  postgres-network:
+    # Bridge driver for single-host networking with custom configuration
+    # Allows containers to communicate while isolating from other networks
+    driver: bridge
