@@ -5,7 +5,7 @@
 ## **I. `db/` — The Database Layer**
 
 1. **`config.py`**  
-   Defines configuration schemas for PostgreSQL using Pydantic Settings, loaded from `.env` with `PostgreSQL_` prefix.
+   Defines configuration schemas for PostgreSQL using Pydantic Settings, loaded from `.env` with `POSTGRESQL_` prefix.
 
 2. **`models/`**  
    Contains SQLAlchemy 2.0 ORM models that represent the core domain entities: `'ml_models'` and `'ml_metrics'`.
@@ -27,38 +27,34 @@
 These directories provide **symmetrical implementations** of the same data access patterns — one for synchronous execution (`sync_db/`), and the other for asynchronous (`async_db/`). Both follow identical architectural boundaries but differ only in I/O model, enabling consistent logic across blocking and non-blocking contexts.
 
 1. **`session.py`**  
-   Context-managed database session factory (synchronous or asynchronous) that guarantees:
+   Provides a context-managed database session factory (synchronous or asynchronous) that guarantees:
    - Automatic transaction rollback on exception,
    - Proper session closure regardless of outcome,
-   - Isolation of database state per request or operation.
+   - Isolation of database state per operation.
 
 2. **`repositories/`**  
-   Implements CRUD operations and model-specific queries, and verifies technical correctness of calls before executing database statements.
+   **Low-level data access components with zero business logic.**  
+   Each repository provides methods to **persist, retrieve, update, and delete domain entities** using only:
+   - **Plain Python dictionaries** (for input),
+   - **SQLAlchemy ORM model instances** (for output).  
+   Repositories do **not** validate data, enforce constraints, manage transactions, or interpret business rules. They are a thin abstraction over the ORM, exposing only safe, composable operations on single entity types. Crucially, **repositories never create or manage their own sessions** — they receive an active session from the caller.
 
 3. **`services/`**  
-   Validates high-level business rules and orchestrates repository calls within a single database transaction.
+   **The enforcement layer for domain invariants, transaction control, and cross-cutting validation.**  
+   Services:
+   - Accept **validated Pydantic models** as input,
+   - Enforce **custom business rules** (e.g., uniqueness, referential integrity) via template hooks like `_validate_create`,
+   - **Acquire and manage a database session** for the duration of the operation,
+   - **Orchestrate one or more repositories** within a single transactional boundary,
+   - Explicitly control **transaction lifecycle**: `commit()` on success, `rollback()` on error,
+   - Ensure **proper session cleanup** (`close`) regardless of outcome,
+   - Convert results into **Pydantic response models** — never raw ORM objects.  
 
-### **Extra info: *Key Distinction: Service vs. Repository***
-
-While both layers interact with data, their responsibilities are fundamentally different:
-
-- **Repository** answers:  
-   > *«Can I safely write this to the database?»*  
-   It ensures **technical validity**:  
-   – Is the `ml_model_id` an integer?  
-   – Does the SQL statement comply with schema constraints?  
-   – Will this insert violate a `UNIQUE` index at the database level?
-
-- **Service** answers:  
-   > *«Should this operation be allowed, given the business rules?»*  
-   It enforces **domain meaning**:  
-   – «A metric named `accuracy` already exists for this model — creating another would be ambiguous.»  
-   – «Model names are immutable identifiers — you can not ‘‘rename’’ a model by updating it.»  
-   – «You’re trying to attach a metric to a model that doesn’t exist — that’s a logical error, not just a foreign key violation.»
-
-So, in nutshell, this separation ensures that:
-- Business logic remains testable without a database,
-- Error messages are actionable for API consumers.
+   This design ensures that:
+   - All input is pre-validated and typed,
+   - Business logic is centralized and testable,
+   - The output is always a well-defined, serializable data structure,
+   - Transactional integrity is guaranteed across complex workflows.
 
 ## **III. `migrations/`**
 

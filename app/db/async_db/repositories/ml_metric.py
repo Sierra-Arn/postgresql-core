@@ -3,12 +3,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .base import BaseRepository
 from ...models import MLMetric
-from ...schemas import MLMetricRequestCreate, MLMetricRequestUpdate
 
 
-class MLMetricRepository(BaseRepository[MLMetric, MLMetricRequestCreate, MLMetricRequestUpdate]):
+class MLMetricRepository(BaseRepository[MLMetric]):
     """
-    Concrete repository for managing `MLMetric` entity in the database.
+    Concrete repository for managing `MLMetric` entity in the database (async version).
     This class extends the generic `BaseRepository` with model-specific functionality.
 
     Attributes
@@ -27,10 +26,9 @@ class MLMetricRepository(BaseRepository[MLMetric, MLMetricRequestCreate, MLMetri
         ----------
         db : AsyncSession
             Active SQLAlchemy asynchronous session providing transactional context.
-            Typically injected via a dependency (e.g., FastAPI) or async context manager.
         """
 
-        super().__init__(db, MLMetric)
+        super().__init__(db=db, model=MLMetric)
 
     async def get_by_model_id_and_name(self, model_id: int, metric_name: str) -> MLMetric | None:
         """
@@ -47,11 +45,6 @@ class MLMetricRepository(BaseRepository[MLMetric, MLMetricRequestCreate, MLMetri
         -------
         MLMetric or None
             The metric instance if found; `None` if no such metric exists for the given model.
-
-        Notes
-        -----
-        This operation is critical during metric registration to prevent duplicates
-        and during updates to locate the correct entity (since the metric ID is not exposed in the API path).
         """
         
         stmt = select(MLMetric).where(

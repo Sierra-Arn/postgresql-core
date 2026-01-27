@@ -3,7 +3,7 @@ authors = ["Sierra Arn"]
 channels = ["conda-forge"]
 name = "postgresql-core"
 platforms = ["linux-64"]
-version = "0.1.0"
+version = "0.2.0"
 
 [tasks]
 
