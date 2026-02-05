@@ -84,7 +84,7 @@ the IPython kernel for Jupyter, enabling interactive notebook development and se
 
 5. **Start PostgreSQL database**
    ```bash
-   just postgres-up-2
+   just postgres-up 2
    ```
 
 6. **Create a database migration & Apply it**
@@ -98,13 +98,13 @@ the IPython kernel for Jupyter, enabling interactive notebook development and se
 Once a database is ready, you can run and test the PostgreSQL implementation with interactive Jupyter notebooks in `playground-testing/`. Additionally, you can open a psql to manually verify that everything is working correctly:
 
 ```bash
-just postgres-shell-2
+just postgres-shell 2
 ```
 
 ### **IV. Cleanup**
 
 ```bash
-just postgres-down-2
+just postgres-down 2
 ```
 
 ## **License**
