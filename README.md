@@ -40,8 +40,9 @@ a lightweight, cross-platform command runner that replaces complex shell scripts
 [^1]: Despite using `pixi`, there are issues with `pixi tasks` regarding environment variable handling from `.env` files and caching mechanism that is unclear and causes numerous errors. In contrast, `just` provides predictable, transparent execution without the complications encountered with `pixi tasks` system. I truly hope `pixi tasks` have been improved by the time you’re reading this! <33
 
 ### **Testing & Development Dependencies**
-- [ipykernel](https://github.com/ipython/ipykernel) — 
-the IPython kernel for Jupyter, enabling interactive notebook development and seamless integration with the project’s virtual environments.
+
+- [JupyterLab](https://github.com/jupyterlab/jupyterlab) — 
+a next-generation web-based interactive development environment for Jupyter notebooks; used here to create interactive documents for testing and verifying code execution.
 
 ## **Quick Start**
 
@@ -95,17 +96,38 @@ the IPython kernel for Jupyter, enabling interactive notebook development and se
 
 ### **III. Testing**
 
-Once a database is ready, you can run and test the PostgreSQL implementation with interactive Jupyter notebooks in `playground-testing/`. Additionally, you can open a psql to manually verify that everything is working correctly:
+Once a database is ready, you can run and test the PostgreSQL implementation with interactive Jupyter notebooks in `playground-testing/`:
 
-```bash
-just postgres-shell 2
-```
+1. **Launch JupyterLab**
+
+    ```bash
+    pixi run -e test jupyter lab
+    ```
+
+2. **Test the PostgreSQL implementation**
+    - JupyterLab should open automatically in your browser at the default address.
+    - In JupyterLab, navigate to the `playground-testing/` folder.
+    - Open and execute the notebooks interactively.
+
+3. **(Optional) Verify database manually**  
+You can open a PostgreSQL shell to manually verify that everything is working correctly:
+
+    ```bash
+    just postgres-shell 2
+    ```
 
 ### **IV. Cleanup**
 
-```bash
-just postgres-down 2
-```
+When you finish testing:
+
+1. **Stop JupyterLab**  
+   In the terminal where JupyterLab is running, press `Ctrl+C` to shut it down.
+
+2. **Stop PostgreSQL**
+
+    ```bash
+    just postgres-down 2
+    ```
 
 ## **License**
 

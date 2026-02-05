@@ -10,3 +10,6 @@ __pycache__/
 
 # PostgreSQL-specific files
 postgresql-data/
+
+# Jupyter-generated files
+.ipynb_checkpoints/
