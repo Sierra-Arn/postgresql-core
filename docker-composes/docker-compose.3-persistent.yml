@@ -15,14 +15,37 @@ services:
     ports:
       - "${POSTGRESQL_EXTERNAL_PORT}:${POSTGRESQL_INTERNAL_PORT}"
     volumes:
+      # Mounting initialization scripts directory
+      # SQL scripts in this directory are executed automatically on first database initialization
+      # Scripts run in alphabetical order during container startup
       - ../app/initialization:/docker-entrypoint-initdb.d
-      # Mounting named volume for persistent PostgreSQL data storage
-      # Volume postgres-data will be created automatically on first run
+      # Mounting volume for persistent PostgreSQL data storage
       # PostgreSQL is ACID-compliant: each committed transaction is immediately written to disk
       # This ensures data durability - if you receive confirmation of a successful operation,
       # the data is already safely stored on disk, even if the container crashes immediately after
-      # All database data will be saved in this volume
-      - ${POSTGRESQL_DATA_PATH}:/var/lib/postgresql/data
+      # All database files, tables, indexes, and WAL logs are stored in the /var/lib/postgresql/data directory
+      #
+      # There are two approaches to persist PostgreSQL data:
+      # (Both approaches ensure data persists across container restarts and removals)
+      # =====================================================
+      # Option 1: Bind Mount (currently active)
+      # Maps a host directory directly to the container's /var/lib/postgresql/data directory
+      # Data is stored at the path specified by POSTGRESQL_DATA_PATH on the host machine
+      # Provides direct access to database files from the host filesystem
+      - ../${POSTGRESQL_DATA_PATH}:/var/lib/postgresql/data
+      # =====================================================
+      # Option 2: Named Volume (alternative approach)
+      # Uses Docker-managed storage with a named volume for better isolation and portability
+      # Docker manages the storage location (typically /var/lib/docker/volumes/) instead of
+      # using a direct path on the host filesystem
+      # This is NOT a bind mount - Docker controls where and how data is stored
+      # 
+      # To use this approach:
+      # 1. Comment out the bind mount line above
+      # 2. Uncomment the volumes section at the bottom of this file
+      # 3. Uncomment the line below
+      # - postgres-data:/var/lib/postgresql/data
+      # =====================================================
     networks:
       - postgres-network
     healthcheck:
@@ -56,11 +79,12 @@ networks:
     driver: bridge
 
 # =====================================================
-# Volume Configuration
+# Volumes Configuration
+# Uncomment this section if using named volumes instead of bind mounts
 # =====================================================
-volumes:
-  postgres-data:
-    # Using local driver to store data on the host machine
-    driver: local
-    # Data will persist even after container removal
-    # On docker-compose restart, data will be restored automatically
+# volumes:
+#   postgres-data:
+#     # Using local driver to store data on the host machine
+#     driver: local
+#     # Data will persist even after container removal
+#     # On docker-compose restart, data will be restored automatically
