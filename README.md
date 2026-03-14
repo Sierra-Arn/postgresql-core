@@ -2,6 +2,9 @@
 
 *An educational project showcasing how to use PostgreSQL with Python, covering both synchronous and asynchronous approaches.*
 
+> ⚠️ **This repository is archived.**  
+While the server setup and configuration remain unchanged, the Python code (SQLAlchemy patterns, repositories, services) is periodically revised as better approaches are discovered or past decisions are reconsidered. Maintaining identical changes across three separate repositories has no practical value, so active development continues only in [sqlite-core](https://github.com/Sierra-Arn/sqlite-core). Refer to that project for the latest Python implementation.
+
 ## **Project Structure**
 
 ```bash
